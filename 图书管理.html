@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>图书管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        #shade {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            /*z-index 属性设置元素的堆叠顺序。拥有更高堆叠顺序的元素总是会处于堆叠顺序较低的元素的前面。*/
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            opacity: 0.3;
+            /*opacity透明度*/
+            /*兼容IE8及以下版本浏览器*/
+            filter: alpha(opacity=30);
+            display: none;
+        }
+
+        #modal {
+            position: absolute;
+            z-index: 3;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 1000px;
+            height:100px;
+            margin: auto;
+            display: none;
+            background-color: #dff0d8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <form class="form-inline" style="margin: 25px 0">
+            <div class="form-group">
+                <label for="bookName">名字：</label>
+                <input type="text" class="form-control" id="bookName">
+            </div>
+            <div class="form-group">
+                <label for="bookAuthor">作者：</label>
+                <input type="text" class="form-control" id="bookAuthor">
+            </div>
+            <div class="form-group">
+                <label for="bookPublish">出版社：</label>
+                <input type="text" class="form-control" id="bookPublish">
+            </div>
+            <button type="button" class="btn btn-primary" id="addBook">添加图书</button>
+        </form>
+        <table class="table table-hover table-striped table-bordered  ">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>名字</th>
+                    <th>作者</th>
+                    <th>出版社</th>
+                    <th>操作</th>
+                </tr>
+
+            </thead>
+            <tbody id="tb">
+
+            </tbody>
+        </table>
+        <nav aria-label="...">
+            <ul class="pager ">
+                <li class="previous"><a href="#" id="prev"><span aria-hidden="true">&larr;</span> 上一页</a></li>
+                <li>共<span id="total"></span>条，当前第 <span id="page"></span>/<span id="size"></span> 页</li>
+                <li class="next"><a href="#" id="next">下一页 <span aria-hidden="true">&rarr;</span></a></li>
+            </ul>
+        </nav>
+
+    </div>
+    <div id="shade">
+
+    </div>
+    <div id="modal">
+        <form class="form-inline" style="margin: 25px 0">
+            <div class="form-group">
+                <label for="bookName">名字：</label>
+                <input type="text" class="form-control" id="bookName" value="">
+            </div>
+            <div class="form-group">
+                <label for="bookAuthor">作者：</label>
+                <input type="text" class="form-control" id="bookAuthor">
+            </div>
+            <div class="form-group">
+                <label for="bookPublish">出版社：</label>
+                <input type="text" class="form-control" id="bookPublish">
+            </div>
+            <button type="button" class="btn btn-primary" id="a2">确认修改</button>
+        </form>
+       
+    </div>
+    <!--引入JQ cdn-->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.11.3/jquery.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        let page = 1;
+        //显示
+        function getBookList(page) {
+            $.ajax({
+                url: "http://localhost:3000/list",
+                data: { page },
+                type: 'get',
+                dataType: 'json',
+                success: function (res) {
+                    let str = `
+                    <tr class="success">
+                    <th >ID</th>
+                    <th>名字</th>
+                    <th>作者</th>
+                    <th>出版社</th>
+                    <th>操作</th>
+                </tr>`;
+                    (res.msg[0].books).forEach(function (item, index) {
+                        str += `
+                  <tr class="">
+                    <td>${index + 1}</td>
+                    <td>${item.title}</td>
+                    <td>${item.author}</td>
+                    <td class="del">${item.press}</td>
+                    <td id="td"><button  class="btn  btn-danger btn-xs del" delid="${item._id}">删除</button>
+                        <button  class="btn btn-success btn-xs edit" editid="${item._id}">编辑</button>
+                        </td>
+                  </tr>                       
+                  `
+                    })
+                    $("thead").html(str);
+                    $("#total").html(res.msg[0].total);
+                    $("#pagesize").html(res.msg[0].pageSize);
+                    $("#page").html(res.msg[0].page);
+                    $("#size").html(res.msg[0].size);
+                    //删除
+                    $(".del").on('click', function () {
+
+                        let id = $(this).attr("delid");
+
+                        console.log(id);
+                        var r = confirm("你确定删除吗？");
+                        if (r == true) {
+                            $.ajax({
+                                url: "http://localhost:3000/del",
+                                type: 'post',
+                                data: { id },
+                                dataType: 'json',
+                                success: function (res) {
+
+                                    getBookList(page);
+                                }
+                            })
+
+                        }
+                        else {
+
+                        }
+
+
+                    })
+                    $(".edit").on("click", function (e) {
+                        // $.ajax({
+                        //     url:"http://localhost:3000/edit",
+                        //     type:"get",
+                        //     dataType:"json"
+                        // })
+                        let id = $(this).attr("editid");
+                        console.log(id);
+                        var a1 = document.getElementsByClassName('edit');
+                        var a2 = document.getElementsByClassName('a2');
+                        e.preventDefault();//取消事件的默认动作。
+                        var shade = document.getElementById("shade");
+                        shade.style.display = "block";
+
+                        var modal = document.getElementById("modal");
+                        modal.style.display = "block";
+
+
+                    })
+                    $("#a2").on("click", function (e) {
+
+                        e.preventDefault();//取消事件的默认动作。
+                        var shade = document.getElementById("shade");
+                        shade.style.display = "none";
+
+                        var modal = document.getElementById("modal");
+                        modal.style.display = "none";
+
+                    })
+                }
+            })
+        }
+        getBookList(page);
+        //添加
+        $("#addBook").on('click', function () {
+            let title = $("#bookName").val().trim();
+            let author = $("#bookAuthor").val().trim();
+            let press = $("#bookPublish").val().trim();
+            if (title.length <= 0 || author.length <= 0 || press.length <= 0) {
+                return alert("请填写完整")
+            }
+            $.ajax({
+                url: "http://localhost:3000/add",
+                type: 'post',
+                data: { title, author, press },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.code !== 1) {
+                        return alert("添加图书失败")
+                    }
+                    getBookList(page);
+                    $("#bookName").val("")
+                    $("#bookAuthor").val("")
+                    $("#bookPublish").val("")
+                }
+            })
+
+            // axios.post("http://localhost:3000/add", {
+            //     title: title,
+            //     author: author,
+            //     press: press
+            // }).then(function (res) {
+            //     console.log(res);
+            // }).catch(function (err) {
+            //     console.log(err);
+            // })
+            // getBookList(page);
+            // $("#bookName").val("")
+            // $("#bookAuthor").val("")
+            // $("#bookPublish").val("")
+        })
+
+        //上一页
+        $("#prev").click(function (e) {
+            if (page > 1) {
+                getBookList(--page);
+            }
+            e.preventDefault();
+        })
+        //下一页
+        $("#next").click(function (e) {
+            let size = $("#size").html();
+            if (page < size) {
+                getBookList(++page);
+            }
+            e.preventDefault();
+        })
+
+
+    </script>
+
+</body>
+
+</html>
